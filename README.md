@@ -115,7 +115,8 @@ Both `--tapeHeaderFile` and `--prependPlus3DosHeader` are mutually exclusive. Bo
 ## Features
 
 
-### Character Set Conversions {#feature-character-set}
+<a id="feature-character-set"></a>
+### Character Set Conversions
 
 > TLDR Summary: `speccy-conv.py` auto-convert the ZX Spectrum character set to Unicode and back, including special characters to represent each User Defined Graphic (UDG), graphic/block characters, and tokens. It will not convert display attributes (`TAB`, `INK`, `PAPER`, etc.).
 
@@ -142,8 +143,8 @@ The `TAB` code point (17h) and other display attribute dual-code sequences (`INK
 In the two overlapping Spectrum code points A3h and A4h, the user can select if they convert to UDGs as in the ZX Spectrums 48K/16K (using argument `--useSpectrum48KTokens`), or convert to tokens as in the ZX Spectrums 128K/+2/+3 (default).
 
 
-
-### Automatic +3DOS File Header Detection {#feature-plus3dos-header}
+<a id="feature-plus3dos-header"></a>
+### Automatic +3DOS File Header Detection
 
 > TLDR Summary: `speccy-conv.py` will auto-detect and use a +3DOS File Header, if one is present.
 
@@ -172,7 +173,8 @@ This header is part of a file's data, as read by a disk-aware, but Spectrum-obli
 If these are true, is assumes the +3DOS File Header is present and retrieves the necessary values before proceeding.
 
 
-### Tape Header Support {#feature-tape-header}
+<a id="feature-tape-header"></a>
+### Tape Header Support
 
 > TLDR Summary: `speccy-conv.py` supports reading and generating tape header blocks. When reading, it auto-detects and verifies the presence of raw leading+trailing check bytes.
 
@@ -191,7 +193,8 @@ A new tape header block file can also be generated, as indicated previously.
 * File length matches 19, and the first byte is 00h (header block tape marker) and the last byte holds a correct Checkum XOR value, as documented in [unofficial documentation](https://problemkaputt.de/zxdocs.htm#spectrumcassette).
 
 
-### BASIC Program Heuristics {#feature-basic-program-heuristics}
+<a id="feature-basic-program-heuristics"></a>
+### BASIC Program Heuristics
 
 > TLDR Summary: `speccy-conv.py` will auto-detect Sinclair BASIC source code end, even if no header is available.
 
@@ -248,7 +251,8 @@ This means `speccy-conv.py` can read the line number from a Sinclair BASIC sourc
 * One of bits 15 or 14 is set (1), i.e., this is a 16-bit value from 4000h to FFFFh: this is a Variable structure; we've found *VARS* and can stop the BASIC program conversion. Note that the special values for lines, 8000h-FFFFh, fall in this range.
 
 
-### Assembly Leading Length Heuristics {#feature-assembly-leading-length}
+<a id="feature-assembly-leading-length"></a>
+### Assembly Leading Length Heuristics
 
 > TLDR Summary: `speccy-conv.py` will check if the first two bytes of an Assembly file match the 16-bit value of the size of the file and skip them if this is the case.
 
