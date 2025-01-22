@@ -4,6 +4,7 @@
 # Author: Pedro Freire
 # Jan 2025
 # GNU General Public License
+# https://github.com/pfre/speccy-conv
 
 
 import argparse
@@ -751,7 +752,7 @@ def spectrum_hisoft_gen_asm_to_unicode(
             #
             # Check if we found the EOF
             if  len(line_number_bytes) < 2  or  \
-                (stop_at_soft_eof  and  line_number_bytes[0] == SOFT_EOF_BYTE):
+                (stop_at_soft_eof  and  (line_number_bytes[0] == SOFT_EOF_BYTE or line_number_bytes[1] == SOFT_EOF_BYTE)):
                 return
             #
             # Convert the bytes to a little-endian unsigned 16-bit number
@@ -1030,7 +1031,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         #prog="ZX Spectrum file converter",
         description="ZX Spectrum <-> Unicode file converter.\nSupports Sinclair BASIC (BAS) and HiSoft GEN Assembler (ASM).",
-        epilog='Author: Pedro Freire - Jan 2025 - GNU General Public License' )
+        epilog='Author: Pedro Freire - Jan 2025 - GNU General Public License - https://github.com/pfre/speccy-conv' )
 
     # Positional parameters
     parser.add_argument(

@@ -96,7 +96,7 @@ for help:
                             Prepend +3DOS File Header to the beginning of the output (Spectrum) file
     -s, --useSoftEOF      Stop parsing (Spectrum) input at Soft-EOF (1Ah), or append Soft-EOF to the end of the output (Spectrum) file
 
-    Author: Pedro Freire - Jan 2025 - GNU General Public License
+    Author: Pedro Freire - Jan 2025 - GNU General Public License - https://github.com/pfre/speccy-conv
 
 Most arguments were described in the **Quick Start** section, above.
 
