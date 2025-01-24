@@ -366,18 +366,20 @@ if '\t' in dict_unicode_to_spectrum_hisoft_gen_asm:
     del dict_unicode_to_spectrum_hisoft_gen_asm['\t'];
 
 
-# Spectrum File Header
+# Spectrum BASIC Header
 #
 # On tape:
-#   https://problemkaputt.de/zxdocs.htm#spectrumcassette
+# From problemkaputt.de:
+# https://problemkaputt.de/zxdocs.htm#spectrumcassette
 #
 # On +3DOS (+3 BASIC Header):
-#   From the ZX Spectrum +3 Manual
-#   - "Guide to +3DOS"
-#     - "Essential filing system routines"
-#       - "DOS OPEN 0106h (262)"
+# From the ZX Spectrum +3 manual, part 27 "Guide to +3DOS", section "DOS OPEN 0106h (262)"
+# https://zxspectrumvault.github.io/Manuals/Hardware/SpectrumPlus3Manual.html#part27
 #
-class Spectrum_File_Header:
+# These are jointly called "Spectrum BASIC Headers" because it's how
+# Sinclair BASIC generates and reads them with SAVE and LOAD commands.
+#
+class Spectrum_BASIC_Header:
     TYPE_BASIC_PROGRAM  = 0
     TYPE_NUMERIC_ARRAY  = 1
     TYPE_CHAR_ARRAY     = 2
@@ -408,7 +410,10 @@ class Spectrum_File_Header:
 
     def __init__( self, header_type = TAPE_HEADER_TYPE, file_name = "", file_length = 0 ):
         """
-        Zero all Spectrum File Header data, space-fill file_name.
+        Zero all Spectrum BASIC Header data, space-fill file_name.
+
+        From tape, problemkaputt.de:
+        "Filename (padded with blanks, ie. chr(20h))"
 
         From the ZX Spectrum +3 manual:
         "If open action = 1, and the file exists (and has a header), then the
@@ -416,9 +421,9 @@ class Spectrum_File_Header:
         The header data is available even if the file does not have a header."
         """
         assert header_type == self.TAPE_HEADER_TYPE  or  header_type == self.PLUS3_BASIC_HEADER_TYPE,  \
-            "header_type must be one of Spectrum_File_Header.TAPE_HEADER_TYPE or Spectrum_File_Header.PLUS3_BASIC_HEADER_TYPE"
+            "header_type must be one of Spectrum_BASIC_Header.TAPE_HEADER_TYPE or Spectrum_BASIC_Header.PLUS3_BASIC_HEADER_TYPE"
         assert len(file_name) <= self.FILE_NAME_MAX_LENGTH,  \
-            f"file_name must have maximum length of Spectrum_File_Header.FILE_NAME_MAX_LENGTH ({self.FILE_NAME_MAX_LENGTH})"
+            f"file_name must have maximum length of Spectrum_BASIC_Header.FILE_NAME_MAX_LENGTH ({self.FILE_NAME_MAX_LENGTH})"
         self.header_type                = header_type
         self.file_type                  = 0
         self.file_name                  = file_name
@@ -435,14 +440,14 @@ class Spectrum_File_Header:
             return self.PLUS3_BASIC_HEADER_LENGTH
         else:
             assert False,  \
-                "header_type must be one of Spectrum_File_Header.TAPE_HEADER_TYPE or Spectrum_File_Header.PLUS3_BASIC_HEADER_TYPE"
+                "header_type must be one of Spectrum_BASIC_Header.TAPE_HEADER_TYPE or Spectrum_BASIC_Header.PLUS3_BASIC_HEADER_TYPE"
 
 
     def set_type_basic_program( self, start_line = BASIC_NO_AUTO_START, offset_to_prog = 0 ):
         self.file_type = self.TYPE_BASIC_PROGRAM
         assert start_line == self.BASIC_NO_AUTO_START  or  \
                (start_line >= 1 and start_line <= 9999),  \
-               "Start_line must be Spectrum_File_Header.BASIC_NO_AUTO_START or between 1 and 9999."
+               "Start_line must be Spectrum_BASIC_Header.BASIC_NO_AUTO_START or between 1 and 9999."
         self.basic_automatic_start_line = start_line
         self.basic_prog_length = offset_to_prog
 
@@ -473,8 +478,8 @@ class Spectrum_File_Header:
 
     def encode( self ):
         """
-        Encodes this object into an 8-byte header array
-        which is returned.
+        Encodes this object into an 17/8-byte Spectrum (tape/+3) BASIC Header byte string,
+        depending on elf.header_type. The byte string is returned.
 
         Sanity assertions are disabled so that an insane decode() can be encode()ed back.
         """
@@ -493,14 +498,14 @@ class Spectrum_File_Header:
             if self.file_type == self.TYPE_BASIC_PROGRAM:
                 #assert self.basic_automatic_start_line == self.BASIC_NO_AUTO_START  or  \
                 #    (self.basic_automatic_start_line >= 1 and self.basic_automatic_start_line <= 9999),  \
-                #    "Spectrum_File_Header.basic_automatic_start_line must be Spectrum_File_Header.BASIC_NO_AUTO_START or between 1 and 9999."
+                #    "Spectrum_BASIC_Header.basic_automatic_start_line must be Spectrum_BASIC_Header.BASIC_NO_AUTO_START or between 1 and 9999."
                 header_bytes += struct.pack( "<H", self.basic_automatic_start_line )
                 header_bytes += struct.pack( "<H", self.basic_prog_length )
 
             elif self.file_type == self.TYPE_NUMERIC_ARRAY  or  \
                 self.file_type == self.TYPE_CHAR_ARRAY:
                 header_bytes += b'\x00'
-                #assert len(self.array_name) == 1  and  self.array_name[0].isalpha(), "Spectrum_File_Header.array_name must be a single letter"
+                #assert len(self.array_name) == 1  and  self.array_name[0].isalpha(), "Spectrum_BASIC_Header.array_name must be a single letter"
                 header_bytes += dict_unicode_to_spectrum.get( self.array_name[0], self.array_name[0].encode(CHARSET_UNICODE_CHAR) )
                 header_bytes += b'\x00\x00'
 
@@ -511,21 +516,21 @@ class Spectrum_File_Header:
                     # https://problemkaputt.de/zxdocs.htm#spectrumcassette
 
             #else:
-            #    assert False, "Invalid value for Spectrum_File_Header.file_type"
+            #    assert False, "Invalid value for Spectrum_BASIC_Header.file_type"
 
         header_bytes = header_bytes.ljust( self.header_length(), b'\x00' )
-        assert len(header_bytes) == self.header_length(), f"Generated header bytes should total Spectrum_File_Header.TAPE_HEADER_LENGTH/PLUS3_BASIC_HEADER_LENGTH ({self.header_length()}) bytes in length"
+        assert len(header_bytes) == self.header_length(), f"Generated header bytes should total Spectrum_BASIC_Header.TAPE_HEADER_LENGTH/PLUS3_BASIC_HEADER_LENGTH ({self.header_length()}) bytes in length"
         return header_bytes
 
 
     def decode( self, header_bytes ):
         """
-        Decodes +3 BASIC Header from a byte array.
+        Decodes Spectrum (tape/+3) BASIC Header from a byte array, depending on elf.header_type.
         Current object is always changed except if header_bytes is of the incorrect length,
         in which case the current object is zeroed.
         Caller must do value checks before calling self.encode()
 
-        Returns True if header_bytes describe a sane +3 BASIC Header.
+        Returns True if header_bytes describe a sane Spectrum BASIC Header.
         Returns False otherwise.
         """
 
@@ -597,11 +602,10 @@ class Spectrum_File_Header:
 
 
 # +3DOS File Header
-# From the ZX Spectrum +3 Manual
-# - "Guide to +3DOS"
-#   - "File headers"
+# From the ZX Spectrum +3 manual, part 27 "Guide to +3DOS", section "File headers"
+# https://zxspectrumvault.github.io/Manuals/Hardware/SpectrumPlus3Manual.html#part27
 #
-class Plus3Dos_File_Header:
+class Plus3DOS_File_Header:
     HEADER_SIGNATURE = b"PLUS3DOS"+SOFT_EOF_BYTE
     HEADER_LENGTH    = 128
 
@@ -609,14 +613,14 @@ class Plus3Dos_File_Header:
     issue_number            = 1
     version_number          = 0
     file_length_with_header = HEADER_LENGTH
-    basic_header            = Spectrum_File_Header( Spectrum_File_Header.PLUS3_BASIC_HEADER_TYPE )
+    basic_header            = Spectrum_BASIC_Header( Spectrum_BASIC_Header.PLUS3_BASIC_HEADER_TYPE )
 
     def __init__( self, file_length = 0 ):
         self.signature               = self.HEADER_SIGNATURE
         self.issue_number            = 1
         self.version_number          = 0
         self.file_length_with_header = self.HEADER_LENGTH + file_length
-        self.basic_header            = Spectrum_File_Header(Spectrum_File_Header.PLUS3_BASIC_HEADER_TYPE)  # Leave it as the default "zeroed"
+        self.basic_header            = Spectrum_BASIC_Header(Spectrum_BASIC_Header.PLUS3_BASIC_HEADER_TYPE)  # Leave it as the default "zeroed"
 
     def set_file_length( self, file_length ):
         self.file_length_with_header  = self.HEADER_LENGTH + file_length
@@ -625,6 +629,13 @@ class Plus3Dos_File_Header:
 
 
     def encode( self ):
+        """
+        Encodes this object into an 128-byte +3DOS File Header byte string.
+        The byte string is returned.
+
+        Sanity assertions are disabled so that an insane decode() can be encode()ed back.
+        """
+
         header_bytes  = self.signature
         header_bytes += struct.pack( "<B", self.issue_number )
         header_bytes += struct.pack( "<B", self.version_number )
@@ -677,7 +688,7 @@ class Plus3Dos_File_Header:
         issue_number             = header_bytes[9]
         version_number           = header_bytes[10]
         file_length_with_header  = struct.unpack( "<I", header_bytes[11:15] )[0]
-        basic_header             = Spectrum_File_Header( Spectrum_File_Header.PLUS3_BASIC_HEADER_TYPE )
+        basic_header             = Spectrum_BASIC_Header( Spectrum_BASIC_Header.PLUS3_BASIC_HEADER_TYPE )
         basic_header_decode_ok   = basic_header.decode( header_bytes[15:23] )
 
         # Check if +3 BASIC Header was decoded correctly
@@ -728,7 +739,7 @@ def spectrum_hisoft_gen_asm_to_unicode(
 
         # Check for optional leading +3DOS File Header
         # If present, read Max_length from it
-        plus3dos_header = Plus3Dos_File_Header()
+        plus3dos_header = Plus3DOS_File_Header()
         plus3dos_header_bytes = infile.read( plus3dos_header.HEADER_LENGTH )
         #
         if  len(plus3dos_header_bytes) == plus3dos_header.HEADER_LENGTH  and  \
@@ -813,10 +824,13 @@ def unicode_to_spectrum_hisoft_gen_asm(
     use them if present. If missing, all lines will be numbered starting at 10, in steps
     of 10.
 
-    If inserting the file back to a DSK, remember to run the following command on the
-    ZX Spectrum +3 [emulator] to recreate the +3DOS File Header:
-    - COPY file TO SPECTRUM FORMAT
-    - Use the created "file.HED" file
+    This function can generate a tape header block to be written in TAP/TZX.
+
+    If writing the file back to a DSK, remember to either:
+    - Request the generation of a +3DOS File Header, or
+    - Run the following command on the ZX Spectrum +3 [emulator] to recreate the +3DOS File Header:
+        - COPY file TO SPECTRUM FORMAT
+        - Use the created "file.HED" file
     """
 
     with open(filename_unicode,  "rt", encoding=CHARSET_UNICODE_FILE) as infile,  \
@@ -829,7 +843,7 @@ def unicode_to_spectrum_hisoft_gen_asm(
 
         # Write +3DOS File Header
         if prepend_plus3dos_header:
-            plus3dos_header = Plus3Dos_File_Header()
+            plus3dos_header = Plus3DOS_File_Header()
             # We need to know the final file length to re-write and re-calculate the checksum
             # So for now we just write the header with all zeros
             outfile.write( b"".ljust(plus3dos_header.HEADER_LENGTH, b'\x00') )
@@ -886,9 +900,9 @@ def unicode_to_spectrum_hisoft_gen_asm(
         if filename_tape_header != None:
             file_length = outfile.tell()
             with open(filename_tape_header, "wb") as headerfile:
-                tape_header = Spectrum_File_Header(
-                    Spectrum_File_Header.TAPE_HEADER_TYPE,
-                    os.path.basename(filename_spectrum.replace('\\', '/'))[: Spectrum_File_Header.FILE_NAME_MAX_LENGTH],
+                tape_header = Spectrum_BASIC_Header(
+                    Spectrum_BASIC_Header.TAPE_HEADER_TYPE,
+                    os.path.basename(filename_spectrum.replace('\\', '/'))[: Spectrum_BASIC_Header.FILE_NAME_MAX_LENGTH],
                     file_length )
                 tape_header.set_type_code_or_screen()
                 header_bytes = tape_header.encode()
@@ -907,6 +921,7 @@ def spectrum_sinclair_bas_to_unicode(
     The original file would need to have been extracted from TAP/TZX/DSK.
 
     For files extracted from a DSK:
+    - This function can parse a tape header block.
     - This function detects a +3DOS File Header (if present) on files extracted in CP/M mode.
     - This function detects a Soft-EOF (if present) on files without +3DOS File Header.
 
@@ -932,7 +947,7 @@ def spectrum_sinclair_bas_to_unicode(
     if filename_tape_header != None:
         with open(filename_tape_header, "rb") as headerfile:
             header_bytes = headerfile.read()
-            tape_header = Spectrum_File_Header( Spectrum_File_Header.TAPE_HEADER_TYPE )
+            tape_header = Spectrum_BASIC_Header( Spectrum_BASIC_Header.TAPE_HEADER_TYPE )
             if tape_header.decode(header_bytes):
                 if  tape_header.basic_header.file_type == tape_header.basic_header.TYPE_BASIC_PROGRAM:
                     max_length = min( max_length, tape_header.basic_header.basic_prog_length )
@@ -943,7 +958,7 @@ def spectrum_sinclair_bas_to_unicode(
 
         # Check for optional leading +3DOS File Header
         # If present, read max_length from it
-        plus3dos_header = Plus3Dos_File_Header()
+        plus3dos_header = Plus3DOS_File_Header()
         plus3dos_header_bytes = infile.read( plus3dos_header.HEADER_LENGTH )
         #
         if  len(plus3dos_header_bytes) == plus3dos_header.HEADER_LENGTH  and  \
@@ -1041,11 +1056,11 @@ if __name__ == "__main__":
         )
     parser.add_argument(
         "filenameInput",
-        help = "Filename of input file to convert",
+        help = "Filename of the input file to convert",
         )
     parser.add_argument(
         "filenameOutput",
-        help    = "Filename of output file to generate; defaults to the same as input, with an extension added",
+        help    = "Filename of the output file to generate; defaults to the same as input, with an extension added",
         nargs   = '?',
         default = None
         )
