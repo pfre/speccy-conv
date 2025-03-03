@@ -135,7 +135,7 @@ The following character set conversions are done.
 | 91h-A4h (UDG B-U)    | `🅱` to `🆄`                   | `🅱`, `🅑`, `🄱`, `ⓑ`, `Ⓑ` ... |
 | A3h-FFh (tokens)     | *Tokens*                     | N/A                             |
 
-UDG stands for User -efined Graphics. The selected UDG convertions allow an easy visual recognition of the UDGs in the Unicode file, and precise conversion back into Spectrum format if needed.
+UDG stands for User-Defined Graphics. The selected UDG convertions allow an easy visual recognition of the UDGs in the Unicode file, and precise conversion back into Spectrum format if needed.
 
 Each *token* has one lead/trailing space, as demonstrated by this small ZX Spectrum +3 BASIC program:
 ```
